@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        .wrap {
+            border: 3px solid gray;
+            display: inline-block;
+            position: relative;
+        }
+
+        .wrap .mask {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: rgba(0, 0, 0, .6);
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            /* display: none; */
+        }
+
+        .wrap .img_ {
+            vertical-align: top;
+        }
+
+        .score {
+            color: white;
+            position: absolute;
+            left: 65px;
+            top: 12px;
+        }
+
+        .startBtn {
+            margin-top: 220px;
+            background: rgb(253, 165, 41);
+            color: white;
+            font-weight: bolder;
+            font-size: 1.4rem;
+            padding: 5px 10px;
+            display: inline-block;
+        }
+
+        .gameTime {
+            position: absolute;
+            top: 65px;
+            left: 63px;
+            overflow: hidden;
+        }
+
+        .role {
+            position: absolute;
+            left: 18px;
+            top: 160px;
+            width: 108px;
+            height: 101px;
+            /* background-position: -540px 0; */
+        }
+        .h {
+            background: url(h.png);
+        }
+        .x {
+            background: url(x.png);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <!-- 背景图 -->
+        <img class="img_" src="game_bg.jpg" alt="">
+        <!-- 得分 -->
+        <div class="score">0</div>
+        <!-- 时间 -->
+        <div class="gameTime">
+            <img src="progress.png" alt="">
+        </div>
+        <!-- 遮罩层 -->
+        <div class="mask">
+            <div class="startBtn">开始游戏</div>
+        </div>
+        <!-- 所有的角色 -->
+        <div class="roleAll">
+            <!-- <div class="role"></div> -->
+        </div>
+    </div>
+    <script>
+        // 1.布局
+        var role_pos =[
+            {
+                x: 18,
+                y: 160,
+            },
+            {
+                x: 96,
+                y: 114,
+            },
+            {
+                x: 185,
+                y: 141,
+            }, {
+                x: 14,
+                y: 221,
+            }, {
+                x: 101,
+                y: 192,
+            }, {
+                x: 197,
+                y: 212,
+            }, {
+                x: 27,
+                y: 294,
+            }, {
+                x: 117,
+                y: 273,
+            }, {
+                x: 204,
+                y: 295,
+            },
+        ]
+        //游戏时间
+        var gameTime = 10;
+        //进度条  刷新的时间
+        var progressTime = 100;  //单位  ms
+        //进度条   单次移动的偏移量
+        var speed = 0;
+        //时间进度条的 计时器
+        var progressTimer = null;
+        //2.业务逻辑
+        //获取开始按钮
+        var startBtn = document.getElementsByClassName('startBtn')[0];
+        //获取遮罩层
+        var maskDiv = document.getElementsByClassName('mask')[0];
+        var role_All = document.getElementsByClassName('roleAll')[0];
+        var scoreBox = document.getElementsByClassName('score')[0];
+        var score_val = 0;
+        //a.添加点击事件
+        startBtn.onclick = function () {
+            //游戏开始
+            gamestart();     //调用游戏开始的函数
+            //隐藏遮罩层
+            //maskDiv.style.display = 'none';
+            this.parentNode.style.display = 'none';
+            //开始倒计时
+            progressTimer = setInterval(function () {
+                var thisoffsetWidth = document.getElementsByClassName('gameTime')[0].offsetWidth;
+                if (thisoffsetWidth <= 0) {
+                    clearInterval(gameover);
+                    maskDiv.style.display = 'block';
+                    window.location.reload();
+                } else {
+                    thisoffsetWidth -= speed;
+                    document.getElementsByClassName('gameTime')[0].style.width = thisoffsetWidth + 'px';
+                }
+            }, progressTime)
+        }
+        //资源加载完之后，重新计算时间进度
+        window.onload = function () {
+            speed = document.getElementsByClassName('gameTime')[0].offsetWidth / (gameTime * 1000 / progressTime);
+        }
+        //开始游戏的事件
+        var gameover;
+        function gamestart() {
+            gameover = setInterval(function () {
+                var wolf = creatOnewolf();
+                if(wolf !== undefined){
+                role_All.appendChild(wolf);                              
+            }
+            }, 1000)   //将创建的角色渲染在页面上
+        }
+        //创建一只狼
+        function creatOnewolf() {
+            var wolf = document.createElement('div');   //创建一只狼
+            var pos = radomNum(0, role_pos.length - 1);  //出现位置的随机数
+            if(pos < 0){
+                return;
+            }
+            wolf.index_ = 0;    //出现位置的初始索引
+            //  获取单只狼的随机数
+            var cn = radomNum(0, 100) >= 70 ? 'x' : 'h';  //获取灰太狼和小灰灰出现的概率             
+            wolf.className = 'role  ' + cn;         //灰太狼和小灰灰随机出现   
+            wolf.style.left = role_pos[pos].x + 'px';   //狼出现的随机位置
+            wolf.style.top = role_pos[pos].y + 'px';
+            //当前出现的数据源 去重复
+            wolf.type = cn;  //打击时的角色
+            wolf.flag = false ; //当前元素是否被点击           
+            var pos_obj = role_pos[pos];   //获取到当前角色的位置
+            role_pos.splice(pos,1);    //占位时暂时删除该位置
+            //狼出现的动画
+             wolf.uptimer = setInterval(function(){
+                if(wolf.index_ <= 5){
+                wolf.style.backgroundPosition = wolf.index_ * -108 + 'px  0'; //下标小于等于5时页面展示往上走，即图片向左偏移
+                wolf.index_++;  //索引从初始值0开始自增
+            }else{
+                clearInterval(wolf.uptimer);  //索引大于5时清除向上的定时器，准备隐藏
+                //隐藏的定时器
+                wolf.downtimer = setInterval(function(){
+                    if(wolf.index_ < 1){
+                        clearInterval( wolf.downtimer);    //索引减至0时清除隐藏的定时器
+                        wolf.parentNode.removeChild(wolf);  //清除图片
+                         role_pos.splice(pos,0,pos_obj);  //一次出现和隐藏动作结束后再将删除的位置添加进去
+                    }else{
+                    wolf.index_--;  //由于向上的定时器执行完后索引已经加至6，故先自减，再赋值
+                    wolf.style.backgroundPosition = wolf.index_ * -108 + "px 0";//页面显示向下隐藏，即图片在出现结束后的地方开始向右偏移
+                }   
+                },200)
+            }
+            },200)
+            //狼的打击事件
+            wolf.onclick = function(){
+                if(!wolf.flag ){
+                    wolf.flag = true;
+                scoring(wolf.type);  //调用计算分数的函数
+                wolf.index_ = 5;     //打击时索引已经到5
+                clearInterval(wolf.uptimer);   //清除出现的定时器
+                clearInterval(wolf.downtimer); //清除隐藏的定时器
+                //打击狼的计时器
+                wolf.djTimer = setInterval(function(){
+                    if(wolf.index_ < 9){
+                    wolf.index_++;
+                    wolf.style.backgroundPosition = wolf.index_ * -108 + 'px';
+                }else{
+                    clearInterval(wolf.djTimer);
+                    wolf.parentNode.removeChild(wolf);
+                    role_pos.splice(pos,1,pos_obj);
+                }
+                },200)
+            }
+            }
+            return wolf; 
+        }
+        //随机数
+        function radomNum(min, max) {
+            return radomnum = Math.round(Math.random() * (max - min) + min);
+        }  
+       
+       function scoring(role_type){
+            var wolf_score = role_type == 'x'? -10:10;
+            score_val += wolf_score;
+            scoreBox.innerHTML = score_val;
+        }
+    </script>
+</body>
+
+</html>
